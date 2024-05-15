@@ -10,6 +10,8 @@ and less than 1.0 means the text contains them less.
 
 It then saves the result to a file in the following form:
 
+```
+
 frock 286.979537
   .
   .
@@ -23,6 +25,8 @@ world (0.000776)
   .
   .
 cleanthat (possibly misspelled or unknown)
+
+```
 
 The words in the document that are much more heavily used than they are in general English are listed
 first, followed by the number giving how much more frequent they are than in general English.
