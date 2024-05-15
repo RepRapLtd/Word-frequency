@@ -37,6 +37,9 @@ and the number in brackets is their frequency in English. This list is ordered r
 Finally there is a list of words that don't appear in English at all. These are usually things like foreign words
 or typos.
 
+If I get a chance I'll add a bit that allows you to detect rare words that are used close together, so if 
+you've used "frock" twice in thirty lines, it'll tell you.
+
 This needs the Python 3 wordfreq package from here: https://github.com/rspeer/wordfreq
 
 'The Red Headed League' (including a few typos) is included as a test text. To run the program:
