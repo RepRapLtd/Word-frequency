@@ -1,6 +1,10 @@
 #
 # Simple word-frequency text analysis program
 #
+# We should probably ignore Victorian ideas about elegant variation when writing. But, if you're a writer, you
+# do probably want to know if you've used the word "gargantuan" twice within three pages. This
+# program attempts to analyse that sort of thing for you.
+#
 # This takes text and removes all the punctuation from it reducing it to a list or words.
 # Then it works out the frequency of each word in the text (so 1,000 words containing the word "is" four
 # times would give "is" 0.004). Then it divides that frequency by the frequency of the same word
@@ -9,10 +13,10 @@
 #
 # It then saves the result to a file in the following form:
 #
-# frock 286.979537
+# frock 286.979537 5615
 #   .
 #   .
-# told 0.627716
+# told 0.627716 279
 #   .
 #   .
 # sarasate (1.62e-08)
@@ -23,8 +27,10 @@
 #   .
 # cleanthat (possibly misspelled or unknown)
 #
-# The words in the document that are much more heavily used than they are in general English are listed
-# first, followed by the number giving how much more frequent they are than in general English.
+# The words in the text that are more heavily used than they are in general English are listed
+# first, followed by the number giving how much more frequent they are than in general English, followed by
+# the shortest gap between two instances of the word in the text. The gap is the number of other words in
+# between.
 #
 # Words with a frequency in brackets appear after that list. They each only appear once in the text
 # and the number in brackets is their frequency in English. This list is ordered rarest word first.
@@ -42,7 +48,10 @@
 #
 # If someone wants to write a simple GUI for this and hit me with a pull request, that would be great!
 #
-# This program was written by GPT4 under instruction from me (Adrian Bowyer).
+# It should also be quite simple to make it work for languages other than English. The
+# wordfreq package has multilingual support.
+#
+# This program was written by GPT4 under instruction from me, Adrian Bowyer.
 #
 # Licence: GPL
 #
@@ -67,43 +76,55 @@ def process_text_file(file_path):
 
 def count_and_sort_words_by_relative_frequency(words_list):
     word_count = {}
-    for word in words_list:
+    word_positions = {}
+
+    # First pass: Count the occurrences and record positions of each word
+    for index, word in enumerate(words_list):
         if word in word_count:
             word_count[word] += 1
+            word_positions[word].append(index)
         else:
             word_count[word] = 1
+            word_positions[word] = [index]
 
     total_words = len(words_list)
     word_frequencies = []
     single_occurrence_words = []
     zero_english_frequency_words = []
+    min_gaps = {}  # To store the minimum gap for each word
 
+    # Second pass: Calculate relative frequencies and find minimum gaps
     for word, count in word_count.items():
         general_freq = word_frequency(word, 'en')
         if general_freq == 0:  # Treat as a spelling mistake or unknown word
             zero_english_frequency_words.append((word, 0, 0))
         elif count == 1:
-            # Handle single occurrence words separately, set flag as 1
             single_occurrence_words.append((word, general_freq, 1))
         else:
+            # Calculate document frequency
             doc_freq = count / total_words
-            relative_frequency = doc_freq / general_freq
-            # Normal word that appears multiple times, flag as 2
+            relative_frequency = doc_freq / general_freq if general_freq != 0 else doc_freq
             word_frequencies.append((word, relative_frequency, 2))
 
-    # Sort normal frequencies by relative frequency in descending order
+            # Calculate minimum gap
+            positions = word_positions[word]
+            min_gap = min(positions[i] - positions[i - 1] for i in range(1, len(positions)))
+            min_gaps[word] = min_gap
+
+    # Sort the list of tuples by relative frequency in descending order for normal words
     sorted_word_frequencies = sorted(word_frequencies, key=lambda x: (-x[1], x[0]))
 
     # Sort single occurrence words by their general English frequency, rarest first
     sorted_single_occurrences = sorted(single_occurrence_words, key=lambda x: x[1])
 
-    # Add single occurrence words and zero frequency words at the end
+    # Combine and return the results
     sorted_word_frequencies.extend(sorted_single_occurrences)
     sorted_word_frequencies.extend(zero_english_frequency_words)
 
-    return sorted_word_frequencies
+    return sorted_word_frequencies, min_gaps
 
-def write_results_to_file(results, file_path):
+
+def write_results_to_file(results, min_gaps, file_path):
     with open(file_path, 'w', encoding='utf-8') as file:
         for word, freq, flag in results:
             if flag == 0:  # Spelling mistakes or unknown words
@@ -111,7 +132,8 @@ def write_results_to_file(results, file_path):
             elif flag == 1:  # Single occurrence with English frequency
                 file.write(f"{word} ({freq})\n")
             else:  # Word appears multiple times
-                file.write(f"{word} {freq:.6f}\n")
+                min_gap = min_gaps.get(word, 'N/A')
+                file.write(f"{word} {freq:.6f} {min_gap}\n")
 
 
 def main():
@@ -123,9 +145,13 @@ def main():
     output_file = sys.argv[2]
 
     words = process_text_file(input_file)
-    word_frequencies = count_and_sort_words_by_relative_frequency(words)
-    write_results_to_file(word_frequencies, output_file)
+    word_frequencies, min_gaps = count_and_sort_words_by_relative_frequency(words)
+    write_results_to_file(word_frequencies, min_gaps, output_file)
     print("Processing completed. Output written to:", output_file)
 
 if __name__ == "__main__":
     main()
+
+#words = process_text_file("the-red-headed-league.txt")
+#word_frequencies, min_gaps = count_and_sort_words_by_relative_frequency(words)
+#write_results_to_file(word_frequencies, min_gaps, "rhl.op")

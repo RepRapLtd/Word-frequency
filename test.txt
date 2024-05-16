@@ -1,1 +1,0 @@
-Certainly, Adrian! Here's a Python function that accomplishes what you described. This function reads a text file, removes all punctuation and non-alphabetic characters, converts everything to lowercase, and returns the cleaned text as a list of words.
