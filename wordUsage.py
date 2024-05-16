@@ -5,7 +5,7 @@
 # do probably want to know if you've used the word "gargantuan" twice within three pages. This
 # program attempts to analyse that sort of thing for you. (Yes. The "probably" was deliberate...)
 #
-# This takes text and removes all the punctuation from it reducing it to a list or words.
+# This takes text and removes all the punctuation from it reducing it to a list of words.
 # Then it works out the frequency of each word in the text (so 1,000 words containing the word "is" four
 # times would give "is" 0.004). Then it divides that frequency by the frequency of the same word
 # in English in general, so values bigger than 1.0 mean the text contains the word more often than general English
