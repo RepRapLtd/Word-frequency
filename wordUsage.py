@@ -11,29 +11,29 @@
 # in English in general, so values bigger than 1.0 mean the text contains the word more often than general English
 # and less than 1.0 means the text contains them less.
 #
-# It then saves the result to a file in the following form:
+# It then saves the result to a CSV file in the following form:
 #
-# frock 286.979537 5615
+# frock,286.979537,5615,2
 #   .
 #   .
-# told 0.627716 279
+# told,0.627716,279,2
 #   .
 #   .
-# sarasate (1.62e-08)
+# sarasate,1.62e-08,,1
 #   .
 #   .
-# world (0.000776)
+# world,0.000776,,1
 #   .
 #   .
-# cleanthat (possibly misspelled or unknown)
+# cleanthat,possibly misspelled or unknown,,
 #
 # The words in the text that are more heavily used than they are in general English are listed
 # first, followed by the number giving how much more frequent they are than in general English, followed by
-# the shortest gap between two instances of the word in the text. The gap is the number of other words in
-# between.
+# the shortest gap between two instances of the word in the text, followed by the number of times
+# the word appears. The gap is the number of other words in between.
 #
-# Words with a frequency in brackets appear after that list. They each only appear once in the text
-# and the number in brackets is their frequency in English. This list is ordered rarest word first.
+# Words with a count of 1 appear after that list. The number in brackets is their frequency in English. This list
+# is ordered rarest word first.
 #
 # Finally there is a list of words that don't appear in English at all. These are usually things like foreign words
 # or typos.
@@ -42,9 +42,9 @@
 #
 # 'The Red Headed League' (including a few typos) is included as a test text. To run the program:
 #
-# $ python3 wordUsage.py the-red-headed-league.txt rhl.op
+# $ python3 wordUsage.py the-red-headed-league.txt rhl.csv
 #
-# This will put the output in the file rhl.op.
+# This will put the output in the file rhl.csv that you can ten read in to a spreadsheet.
 #
 # If someone wants to write a simple GUI for this and hit me with a pull request, that would be great!
 #
@@ -59,7 +59,7 @@
 import sys
 import re
 from wordfreq import word_frequency
-
+import csv
 def process_text_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         content = file.read()
@@ -104,7 +104,7 @@ def count_and_sort_words_by_relative_frequency(words_list):
             # Calculate document frequency
             doc_freq = count / total_words
             relative_frequency = doc_freq / general_freq if general_freq != 0 else doc_freq
-            word_frequencies.append((word, relative_frequency, 2))
+            word_frequencies.append((word, relative_frequency, count))
 
             # Calculate minimum gap
             positions = word_positions[word]
@@ -124,18 +124,30 @@ def count_and_sort_words_by_relative_frequency(words_list):
     return sorted_word_frequencies, min_gaps
 
 
+
+
 def write_results_to_file(results, min_gaps, file_path):
-    with open(file_path, 'w', encoding='utf-8') as file:
-        for word, freq, flag in results:
-            if flag == 0:  # Spelling mistakes or unknown words
-                file.write(f"{word} (possibly misspelled or unknown)\n")
-            elif flag == 1:  # Single occurrence with English frequency
-                file.write(f"{word} ({freq})\n")
+    with open(file_path, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        # Write the header row
+        writer.writerow(["Word", "Relative Frequency", "Minimum Gap", "Count"])
+
+        for word, freq, count in results:
+            if count == 0:  # Spelling mistakes or unknown words
+                writer.writerow([word, "possibly misspelled or unknown", "", ""])
+            elif count == 1:  # Single occurrence with English frequency
+                writer.writerow([word, freq, "", 1])
             else:  # Word appears multiple times
                 min_gap = min_gaps.get(word, 'N/A')
-                file.write(f"{word} {freq:.6f} {min_gap}\n")
+                writer.writerow([word, f"{freq:.6f}", min_gap, count])
+
+# Example of how to use the modified function:
+# Assuming you have a list of (word, frequency, flag) tuples called 'results' and a dictionary 'min_gaps':
+# results, min_gaps = count_and_sort_words_by_relative_frequency(words)
+# write_results_to_file(results, min_gaps, 'output.csv')
 
 
+'''
 def main():
     if len(sys.argv) != 3:
         print("Usage: python wordUsage.py <input_file> <output_file>")
@@ -151,7 +163,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-#words = process_text_file("the-red-headed-league.txt")
-#word_frequencies, min_gaps = count_and_sort_words_by_relative_frequency(words)
-#write_results_to_file(word_frequencies, min_gaps, "rhl.op")
+'''
+words = process_text_file("the-red-headed-league.txt")
+word_frequencies, min_gaps = count_and_sort_words_by_relative_frequency(words)
+write_results_to_file(word_frequencies, min_gaps, "rhl.csv")
